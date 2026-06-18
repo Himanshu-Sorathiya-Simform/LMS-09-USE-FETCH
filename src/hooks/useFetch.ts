@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 
-interface FetchState<T> {
-	data: T | null;
-	loading: boolean;
+type FetchState<T> = { data: DataState<T> } & ApiState;
+
+type DataState<T> = T | null;
+type ApiState = {
+	isLoading: boolean;
 	error: Error | null;
-}
+};
 
 function useFetch<T = unknown>(url: string): FetchState<T> {
-	const [state, setState] = useState<FetchState<T>>({
-		data: null,
-		loading: true,
+	const [data, setData] = useState<DataState<T>>(null);
+	const [apiStatus, setApiStatus] = useState<ApiState>({
+		isLoading: true,
 		error: null,
 	});
 
@@ -19,9 +21,8 @@ function useFetch<T = unknown>(url: string): FetchState<T> {
 		const abortController = new AbortController();
 
 		async function fetchData() {
-			setState(
-				(prevState): FetchState<T> => ({ ...prevState, loading: true }),
-			);
+			setData(null);
+			setApiStatus((prev) => ({ ...prev, isLoading: true, error: null }));
 
 			try {
 				const response = await fetch(url, {
@@ -36,20 +37,22 @@ function useFetch<T = unknown>(url: string): FetchState<T> {
 
 				const data = (await response.json()) as T;
 
-				setState({ data, loading: false, error: null });
+				setData(data);
+				setApiStatus((prev) => ({ ...prev, isLoading: false, error: null }));
 			} catch (error) {
 				if (error instanceof Error && error.name === "AbortError") {
 					return;
 				}
 
-				setState({
-					data: null,
-					loading: false,
+				setData(null);
+				setApiStatus((prev) => ({
+					...prev,
+					isLoading: false,
 					error:
 						error instanceof Error ? error : (
 							new Error("An unknown error occurred")
 						),
-				});
+				}));
 			}
 		}
 
@@ -58,7 +61,7 @@ function useFetch<T = unknown>(url: string): FetchState<T> {
 		return () => abortController.abort();
 	}, [url]);
 
-	return state;
+	return { data, isLoading: apiStatus.isLoading, error: apiStatus.error };
 }
 
 export { type FetchState, useFetch };
