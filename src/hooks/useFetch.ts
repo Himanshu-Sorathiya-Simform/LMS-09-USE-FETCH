@@ -8,7 +8,7 @@ type ApiState = {
 	error: Error | null;
 };
 
-function useFetch<T = unknown>(url: string): FetchState<T> {
+function useFetch<T = unknown>(url: string, options?: RequestInit): FetchState<T> {
 	const [data, setData] = useState<DataState<T>>(null);
 	const [apiStatus, setApiStatus] = useState<ApiState>({
 		isLoading: true,
@@ -26,6 +26,8 @@ function useFetch<T = unknown>(url: string): FetchState<T> {
 
 			try {
 				const response = await fetch(url, {
+					...options,
+					method: options?.method ?? "GET",
 					signal: abortController.signal,
 				});
 
@@ -59,7 +61,7 @@ function useFetch<T = unknown>(url: string): FetchState<T> {
 		fetchData();
 
 		return () => abortController.abort();
-	}, [url]);
+	}, [url, options]);
 
 	return { data, isLoading: apiStatus.isLoading, error: apiStatus.error };
 }
