@@ -22,12 +22,11 @@ function useFetch<T = unknown>(url: string, options?: RequestInit): FetchState<T
 
 		async function fetchData() {
 			setData(null);
-			setApiStatus((prev) => ({ ...prev, isLoading: true, error: null }));
+			setApiStatus((): ApiState => ({ isLoading: true, error: null }));
 
 			try {
 				const response = await fetch(url, {
 					...options,
-					method: options?.method ?? "GET",
 					signal: abortController.signal,
 				});
 
@@ -40,21 +39,22 @@ function useFetch<T = unknown>(url: string, options?: RequestInit): FetchState<T
 				const data = (await response.json()) as T;
 
 				setData(data);
-				setApiStatus((prev) => ({ ...prev, isLoading: false, error: null }));
+				setApiStatus((): ApiState => ({ isLoading: false, error: null }));
 			} catch (error) {
 				if (error instanceof Error && error.name === "AbortError") {
 					return;
 				}
 
 				setData(null);
-				setApiStatus((prev) => ({
-					...prev,
-					isLoading: false,
-					error:
-						error instanceof Error ? error : (
-							new Error("An unknown error occurred")
-						),
-				}));
+				setApiStatus(
+					(): ApiState => ({
+						isLoading: false,
+						error:
+							error instanceof Error ? error : (
+								new Error("An unknown error occurred")
+							),
+					}),
+				);
 			}
 		}
 
