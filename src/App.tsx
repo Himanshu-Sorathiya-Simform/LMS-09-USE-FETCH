@@ -1,5 +1,6 @@
 import ComponentError from "./components/ComponentError.tsx";
 import ComponentPost from "./components/ComponentPost.tsx";
+import ComponentRefetch from "./components/ComponentRefetch.tsx";
 import ComponentNormal from "./components/ComponentsNormal.tsx";
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
 			<ComponentNormal />
 			<ComponentError />
 			<ComponentPost />
+			<ComponentRefetch />
 		</div>
 	);
 }
