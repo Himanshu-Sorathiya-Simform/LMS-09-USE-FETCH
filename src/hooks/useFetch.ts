@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-type FetchState<T> = { data: DataState<T> } & ApiState;
+type FetchState<T> = {
+	data: DataState<T>;
+	refetch: () => void;
+} & ApiState;
 
 type DataState<T> = T | null;
 type ApiState = {
@@ -9,11 +12,14 @@ type ApiState = {
 };
 
 function useFetch<T = unknown>(url: string, options?: RequestInit): FetchState<T> {
+	const [triggerRefetch, setTriggerRefetch] = useState(0);
 	const [data, setData] = useState<DataState<T>>(null);
 	const [apiStatus, setApiStatus] = useState<ApiState>({
 		isLoading: true,
 		error: null,
 	});
+
+	const refetch = useCallback(() => setTriggerRefetch((prev) => prev + 1), []);
 
 	useEffect(() => {
 		if (!url) return;
@@ -21,8 +27,7 @@ function useFetch<T = unknown>(url: string, options?: RequestInit): FetchState<T
 		const abortController = new AbortController();
 
 		async function fetchData() {
-			setData(null);
-			setApiStatus((): ApiState => ({ isLoading: true, error: null }));
+			setApiStatus({ isLoading: true, error: null });
 
 			try {
 				const response = await fetch(url, {
@@ -39,31 +44,29 @@ function useFetch<T = unknown>(url: string, options?: RequestInit): FetchState<T
 				const data = (await response.json()) as T;
 
 				setData(data);
-				setApiStatus((): ApiState => ({ isLoading: false, error: null }));
+				setApiStatus({ isLoading: false, error: null });
 			} catch (error) {
 				if (error instanceof Error && error.name === "AbortError") {
 					return;
 				}
 
 				setData(null);
-				setApiStatus(
-					(): ApiState => ({
-						isLoading: false,
-						error:
-							error instanceof Error ? error : (
-								new Error("An unknown error occurred")
-							),
-					}),
-				);
+				setApiStatus({
+					isLoading: false,
+					error:
+						error instanceof Error ? error : (
+							new Error("An unknown error occurred")
+						),
+				});
 			}
 		}
 
 		fetchData();
 
 		return () => abortController.abort();
-	}, [url, options]);
+	}, [url, options, triggerRefetch]);
 
-	return { data, isLoading: apiStatus.isLoading, error: apiStatus.error };
+	return { data, refetch, isLoading: apiStatus.isLoading, error: apiStatus.error };
 }
 
 export { type FetchState, useFetch };
